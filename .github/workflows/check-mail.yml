@@ -1,0 +1,37 @@
+name: Check Sharif Mail
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  check-mail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Check inbox and notify
+        env:
+          IMAP_HOST: mail.sharif.edu
+          IMAP_PORT: '993'
+          EMAIL_USER: parham.moghaddasi04@sharif.edu
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: '137590729'
+        run: python check_mail.py
+
+      - name: Commit updated state
+        run: |
+          git config user.name "sharif-email-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state.json
+          git diff --cached --quiet || git commit -m "update state"
+          git push
